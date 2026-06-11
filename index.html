@@ -307,19 +307,69 @@
     ════════════════════════════════════════════ */
     #gallery { background: var(--wine); text-align: center; }
 
+    /* wrapper para setas */
+    .gallery-carousel-wrap { position: relative; margin-top: 2.5rem; }
+
     .gallery-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1.25rem; margin-top: 2.5rem;
+      gap: 1.25rem;
     }
 
+    /* ── MOBILE: carrossel com setas ── */
     @media (max-width: 600px) {
       .gallery-grid {
         display: flex; overflow-x: auto; gap: 1rem;
         scroll-snap-type: x mandatory;
-        padding-bottom: 1rem;
+        padding: 0 1rem 1rem;
+        scrollbar-width: none;
       }
-      .gallery-item { min-width: 78vw; scroll-snap-align: center; }
+      .gallery-grid::-webkit-scrollbar { display: none; }
+      .gallery-item { min-width: 80vw; scroll-snap-align: center; flex-shrink: 0; }
+    }
+
+    /* setas do carrossel */
+    .gallery-arrow {
+      display: none;
+    }
+    @media (max-width: 600px) {
+      .gallery-arrow {
+        display: flex; align-items: center; justify-content: center;
+        position: absolute; top: 50%; transform: translateY(-50%);
+        width: 2.6rem; height: 2.6rem; border-radius: 50%;
+        background: rgba(61,10,20,.82);
+        border: 1px solid rgba(201,168,76,.45);
+        color: var(--gold-light); font-size: 1.1rem;
+        cursor: pointer; z-index: 10;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 2px 12px rgba(0,0,0,.4);
+        transition: background .2s, transform .2s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .gallery-arrow:active { transform: translateY(-50%) scale(.92); }
+      .gallery-arrow.prev { left: .3rem; }
+      .gallery-arrow.next { right: .3rem; }
+    }
+
+    /* dots indicadores */
+    .gallery-dots {
+      display: none;
+    }
+    @media (max-width: 600px) {
+      .gallery-dots {
+        display: flex; justify-content: center; gap: .45rem;
+        margin-top: 1rem;
+      }
+      .gallery-dot {
+        width: .45rem; height: .45rem; border-radius: 50%;
+        background: rgba(201,168,76,.25);
+        transition: background .3s, transform .3s;
+        cursor: pointer;
+      }
+      .gallery-dot.active {
+        background: var(--gold);
+        transform: scale(1.35);
+      }
     }
 
     .gallery-item {
@@ -657,7 +707,7 @@
 ════════════════════════════════════════════ -->
 <div id="music-player" class="hidden">
   <!-- EDITE: arquivo de música abaixo -->
-  <audio id="audio" src="musica.MPEG" loop preload="none"></audio>
+  <audio id="audio" src="musica.mp3" loop preload="none"></audio>
   <button id="play-btn" aria-label="Play/Pause">▶</button>
   <div class="music-info">
     <!-- EDITE: nome da música abaixo -->
@@ -736,6 +786,9 @@
     <!-- ════════════════════════════════════════
          EDITE: legendas das fotos abaixo
     ════════════════════════════════════════ -->
+    <div class="gallery-carousel-wrap">
+    <button class="gallery-arrow prev" id="gallery-prev" aria-label="Anterior">&#8249;</button>
+    <button class="gallery-arrow next" id="gallery-next" aria-label="Próxima">&#8250;</button>
     <div class="gallery-grid" id="gallery-grid">
 
       <div class="gallery-item reveal" data-img="imagem1.jpeg" data-caption="Pedido de Namoro • 06/03/2021 • Descalvado SP">
@@ -842,7 +895,9 @@
         </div>
       </div>
 
-    </div>
+    </div><!-- /gallery-grid -->
+    <div class="gallery-dots" id="gallery-dots"></div>
+    </div><!-- /gallery-carousel-wrap -->
   </div>
 </section>
 
@@ -1111,6 +1166,33 @@ const CONFIG = {
 })();
 
 /* ──────────────────────────────────────────
+   PLAYER CUSTOMIZADO
+────────────────────────────────────────── */
+const audio   = document.getElementById('audio');
+const playBtn = document.getElementById('play-btn');
+
+function tryPlay() {
+  // força carregamento antes de tentar tocar
+  if (audio.readyState === 0) { audio.load(); }
+  const p = audio.play();
+  if (p !== undefined) {
+    p.then(() => { playBtn.textContent = '⏸'; })
+     .catch(err => { console.warn('Audio play error:', err); });
+  }
+}
+
+playBtn.addEventListener('click', function () {
+  if (audio.paused) {
+    tryPlay();
+  } else {
+    audio.pause();
+  }
+});
+
+audio.addEventListener('play',  () => { playBtn.textContent = '⏸'; });
+audio.addEventListener('pause', () => { playBtn.textContent = '▶'; });
+
+/* ──────────────────────────────────────────
    TELA DE ABERTURA — BOTÃO
 ────────────────────────────────────────── */
 document.getElementById('btn-open').addEventListener('click', function () {
@@ -1122,31 +1204,11 @@ document.getElementById('btn-open').addEventListener('click', function () {
   document.getElementById('music-player').classList.remove('hidden');
 
   // Iniciar música após interação do usuário
-  const audio = document.getElementById('audio');
-  audio.play().catch(() => {});
+  tryPlay();
 
   // Rolar suavemente para o hero
   document.getElementById('hero').scrollIntoView({ behavior: 'smooth' });
 });
-
-/* ──────────────────────────────────────────
-   PLAYER CUSTOMIZADO
-────────────────────────────────────────── */
-const audio   = document.getElementById('audio');
-const playBtn = document.getElementById('play-btn');
-
-playBtn.addEventListener('click', function () {
-  if (audio.paused) {
-    audio.play();
-    playBtn.textContent = '⏸';
-  } else {
-    audio.pause();
-    playBtn.textContent = '▶';
-  }
-});
-
-audio.addEventListener('play',  () => { playBtn.textContent = '⏸'; });
-audio.addEventListener('pause', () => { playBtn.textContent = '▶'; });
 
 /* ──────────────────────────────────────────
    CONTADOR
@@ -1196,6 +1258,61 @@ function closeLightbox() {
 lbClose.addEventListener('click', closeLightbox);
 lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+/* ──────────────────────────────────────────
+   GALERIA — SETAS E DOTS (mobile)
+────────────────────────────────────────── */
+(function initCarousel() {
+  const grid  = document.getElementById('gallery-grid');
+  const prev  = document.getElementById('gallery-prev');
+  const next  = document.getElementById('gallery-next');
+  const dotsC = document.getElementById('gallery-dots');
+
+  const items = Array.from(grid.querySelectorAll('.gallery-item'));
+  const total = items.length;
+  let current = 0;
+
+  // cria dots
+  items.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'gallery-dot' + (i === 0 ? ' active' : '');
+    d.setAttribute('aria-label', 'Foto ' + (i + 1));
+    d.addEventListener('click', () => scrollTo(i));
+    dotsC.appendChild(d);
+  });
+
+  const dots = Array.from(dotsC.querySelectorAll('.gallery-dot'));
+
+  function updateDots(idx) {
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    current = idx;
+  }
+
+  function scrollTo(idx) {
+    if (idx < 0) idx = total - 1;
+    if (idx >= total) idx = 0;
+    items[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    updateDots(idx);
+  }
+
+  prev.addEventListener('click', () => scrollTo(current - 1));
+  next.addEventListener('click', () => scrollTo(current + 1));
+
+  // atualiza dot ao rolar manualmente
+  let scrollTimer;
+  grid.addEventListener('scroll', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      const center = grid.scrollLeft + grid.offsetWidth / 2;
+      let closest = 0, minDist = Infinity;
+      items.forEach((el, i) => {
+        const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center);
+        if (dist < minDist) { minDist = dist; closest = i; }
+      });
+      updateDots(closest);
+    }, 80);
+  });
+})();
 
 /* ──────────────────────────────────────────
    CARTA
