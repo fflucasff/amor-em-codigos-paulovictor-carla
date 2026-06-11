@@ -325,7 +325,10 @@
         scrollbar-width: none;
       }
       .gallery-grid::-webkit-scrollbar { display: none; }
-      .gallery-item { min-width: 80vw; scroll-snap-align: center; flex-shrink: 0; }
+      /* deixa um "espião" do próximo card para indicar que há carrossel */
+      .gallery-item { min-width: 72vw; scroll-snap-align: center; flex-shrink: 0; }
+      /* altura controlada para a foto não tomar a tela inteira */
+      .gallery-item img { aspect-ratio: auto; height: 50vh; }
     }
 
     /* setas do carrossel */
@@ -1172,12 +1175,10 @@ const audio   = document.getElementById('audio');
 const playBtn = document.getElementById('play-btn');
 
 function tryPlay() {
-  // força carregamento antes de tentar tocar
-  if (audio.readyState === 0) { audio.load(); }
+  // toca direto — NÃO chamar load() aqui (interrompe a reprodução)
   const p = audio.play();
   if (p !== undefined) {
-    p.then(() => { playBtn.textContent = '⏸'; })
-     .catch(err => { console.warn('Audio play error:', err); });
+    p.catch(err => { console.warn('Audio play error:', err); });
   }
 }
 
@@ -1189,8 +1190,16 @@ playBtn.addEventListener('click', function () {
   }
 });
 
-audio.addEventListener('play',  () => { playBtn.textContent = '⏸'; });
-audio.addEventListener('pause', () => { playBtn.textContent = '▶'; });
+// botão sempre reflete o estado real do áudio
+audio.addEventListener('play',    () => { playBtn.textContent = '⏸'; });
+audio.addEventListener('playing', () => { playBtn.textContent = '⏸'; });
+audio.addEventListener('pause',   () => { playBtn.textContent = '▶'; });
+
+// se o arquivo não puder ser carregado/decodificado, avisa
+audio.addEventListener('error', () => {
+  document.querySelector('.music-note').textContent = '⚠ áudio indisponível';
+  console.warn('Falha ao carregar o áudio. Verifique se musica.mp3 é um MP3 válido.');
+});
 
 /* ──────────────────────────────────────────
    TELA DE ABERTURA — BOTÃO
